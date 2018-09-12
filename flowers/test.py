@@ -65,6 +65,7 @@ def test(args, net, classes, image):
 
     # Put efficiency information.
     t, _ = net.getPerfProfile()
+    infer_time = t * 1000.0 / cv.getTickFrequency()
     label = 'Inference time: %.2f ms' % (t * 1000.0 / cv.getTickFrequency())
     # cv.putText(frame, label, (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
     print(label)
@@ -74,17 +75,21 @@ def test(args, net, classes, image):
     print(label)
     # cv.imwrite('result.jpg', frame)
     # cv.imshow(winName, frame)
-    return classId, confidence
+    return classId, confidence, infer_time
 
 def test_batch(args, net, classes):
     cls_num = len(classes)
     result = np.zeros((cls_num+3, cls_num+3))
+    time_sum = 0
+    time_cnt = 0
     with open(args.input, 'r') as fi:
         for line in fi:
             arr = line.strip().split(' ')
             if len(arr) < 2:
                 continue
-            cls_id, conf = test(args, net, classes, arr[0])
+            cls_id, conf, t = test(args, net, classes, arr[0])
+            time_sum += t
+            time_cnt += 1
             label = int(arr[1])
             result[label][-3] += 1
             result[label][cls_id] += 1
@@ -102,6 +107,7 @@ def test_batch(args, net, classes):
         result[-1][-2] += result[i][-2]
     result[-1][-1] = result[-1][-2] / result[-1][-3]
     print(result)
+    print(time_sum, time_cnt, time_sum/time_cnt)
 
 
 
